@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Battaglia navale geografica</title>
+  <style>
+    :root {
+      --bg1: #eff6ff;
+      --bg2: #ffffff;
+      --bg3: #e0f2fe;
+      --blue: #1d4ed8;
+      --blue-light: #dbeafe;
+      --green: #bbf7d0;
+      --red: #fee2e2;
+      --border: #bfdbfe;
+      --text: #0f172a;
+      --muted: #475569;
+      --card: rgba(255,255,255,0.92);
+      --shadow: 0 10px 30px rgba(30, 64, 175, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(135deg, var(--bg1), var(--bg2), var(--bg3));
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .top {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 32px;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .progress-line {
+      height: 14px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 14px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #60a5fa, #2563eb);
+      transition: width 0.25s ease;
+    }
+
+    .progress-text {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .teams {
+      display: grid;
+      gap: 10px;
+    }
+
+    .team {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+    }
+
+    .team.active {
+      outline: 3px solid #93c5fd;
+    }
+
+    .team input {
+      border: none;
+      background: transparent;
+      font-size: 16px;
+      font-weight: 700;
+      width: 75%;
+      color: var(--text);
+    }
+
+    .team input:focus {
+      outline: none;
+    }
+
+    .score {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .team-0 { background: #dbeafe; border-color: #93c5fd; }
+    .team-1 { background: #dcfce7; border-color: #86efac; }
+    .team-2 { background: #f3e8ff; border-color: #d8b4fe; }
+    .team-3 { background: #fef9c3; border-color: #fde047; }
+    .team-4 { background: #fce7f3; border-color: #f9a8d4; }
+    .team-5 { background: #ffedd5; border-color: #fdba74; }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #2563eb;
+      color: #fff;
+      transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    button.secondary {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .board-card { margin-top: 18px; }
+
+    .board {
+      display: grid;
+      grid-template-columns: 52px repeat(5, 1fr);
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .head {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: var(--blue);
+      background: #eff6ff;
+      border-radius: 14px;
+      border: 1px solid #bfdbfe;
+    }
+
+    .cell {
+      min-height: 96px;
+      border-radius: 16px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      font-size: 24px;
+      font-weight: 700;
+      color: #1e3a8a;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+    }
+
+    .cell:hover { background: #eff6ff; }
+    .cell.hit { background: var(--green); color: #166534; }
+    .cell.miss { background: var(--red); color: #991b1b; }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+    }
+
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      width: min(760px, 100%);
+      background: #fff;
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.28);
+    }
+
+    .modal h2 {
+      margin: 0 0 16px 0;
+      font-size: 26px;
+    }
+
+    .type-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      border: 1px solid #cbd5e1;
+      background: #eff6ff;
+      color: #1e3a8a;
+    }
+
+    .type-badge.question {
+      background: #eff6ff;
+      color: #1e3a8a;
+      border-color: #93c5fd;
+    }
+
+    .type-badge.bonus {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #fcd34d;
+    }
+
+    .type-badge.ship {
+      background: #ddd6fe;
+      color: #5b21b6;
+      border-color: #c4b5fd;
+    }
+
+    .type-badge.trap {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fca5a5;
+    }
+
+    .question-box {
+      border: 1px solid #cbd5e1;
+      border-radius: 18px;
+      padding: 22px;
+      background: #f8fafc;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      font-size: 24px;
+      line-height: 1.4;
+      margin-bottom: 16px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .winner {
+      margin-top: 18px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #1d4ed8;
+    }
+
+    @media (max-width: 900px) {
+      .top { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="card" style="grid-column: 1 / -1;">
+        <h2 style="margin:0 0 8px 0; font-size:22px;">Regole rapide</h2>
+        <ul style="margin:0; padding-left:18px; line-height:1.5;">
+          <li>Dividetevi in squadre (fino a 6). Turni a rotazione.</li>
+          <li>Scegli una casella: appare la domanda.</li>
+          <li>Risposta corretta → <b>colpita</b> e guadagni i punti della casella.</li>
+          <li>Risposta sbagliata → <b>mancata</b> (la casella si può riprovare).</li>
+          <li>Tipi nascosti (si scoprono aprendo): <b>Bonus</b> (+2), <b>Nave</b> (+3), <b>Trappola</b> (-1 se sbagli).</li>
+          <li>Vince la squadra con più punti a fine griglia.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h1>Battaglia navale geografica</h1>
+        <div class="sub">Versione HTML pronta per la LIM. Apri il file nel browser e premi F11 per lo schermo intero.</div>
+        <div class="progress-line"><div id="progressFill" class="progress-fill"></div></div>
+        <div id="progressText" class="progress-text">0 caselle concluse su 25</div>
+        <div id="winner" class="winner"></div>
+      </div>
+
+      <div class="card">
+        <div class="teams" id="teams"></div>
+        <div class="controls">
+          <button id="nextTurnBtn">Turno successivo</button>
+          <button id="addTeamBtn">+ squadra</button>
+          <button id="resetBtn" class="secondary">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card board-card">
+      <div id="board" class="board"></div>
+      <div class="status">
+        <div id="currentTurn">Turno: Squadra 1</div>
+        <div>Le caselle verdi sono concluse. Le rosse si possono riaprire.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <h2 id="modalTitle">Casella</h2>
+      <div id="typeBadge" class="type-badge question">Domanda</div>
+      <div id="questionBox" class="question-box"></div>
+      <div class="modal-buttons">
+        <button id="toggleAnswerBtn">Mostra risposta</button>
+        <button id="correctBtn">Giusto</button>
+        <button id="wrongBtn" class="secondary">Sbagliato</button>
+        <button id="closeBtn" class="secondary">Chiudi</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const letters = ["A", "B", "C", "D", "E"];
+
+    const baseGrid = [
+      [
+        { label: "A1", type: "question", points: 1, prompt: "Qual è la capitale del Regno Unito?", answer: "Londra" },
+        { label: "B1", type: "question", points: 1, prompt: "Qual è la capitale della Germania?", answer: "Berlino" },
+        { label: "C1", type: "question", points: 1, prompt: "Quale fiume attraversa Londra?", answer: "Tamigi" },
+        { label: "D1", type: "bonus", points: 2, prompt: "Qual è il principale fiume della Germania?", answer: "Reno" },
+        { label: "E1", type: "question", points: 1, prompt: "Qual è la moneta del Regno Unito?", answer: "Sterlina" },
+      ],
+      [
+        { label: "A2", type: "question", points: 1, prompt: "In quale parte dell’Europa si trova la Germania?", answer: "Al centro dell’Europa" },
+        { label: "B2", type: "question", points: 1, prompt: "Qual è la lingua ufficiale del Regno Unito?", answer: "Inglese" },
+        { label: "C2", type: "question", points: 1, prompt: "In quale tipo di aree vive la maggior parte degli abitanti del Regno Unito?", answer: "Nelle città" },
+        { label: "D2", type: "bonus", points: 2, prompt: "Qual è la seconda città del Regno Unito per importanza industriale?", answer: "Birmingham" },
+        { label: "E2", type: "bonus", points: 2, prompt: "Qual è la seconda città della Germania per popolazione?", answer: "Amburgo" },
+      ],
+      [
+        { label: "A3", type: "bonus", points: 2, prompt: "Quali mari bagnano la Germania?", answer: "Mar Baltico e Mare del Nord" },
+        { label: "B3", type: "ship", points: 3, prompt: "Come si chiama la corrente che rende mite il clima del Regno Unito?", answer: "Corrente del Golfo" },
+        { label: "C3", type: "bonus", points: 2, prompt: "Come si chiama il principale settore economico del Regno Unito?", answer: "Terziario" },
+        { label: "D3", type: "bonus", points: 2, prompt: "Qual è il principale settore economico della Germania?", answer: "Industria" },
+        { label: "E3", type: "bonus", points: 2, prompt: "Come si chiamano gli Stati della Germania?", answer: "Länder" },
+      ],
+      [
+        { label: "A4", type: "ship", points: 3, prompt: "Quanti sono i Länder tedeschi?", answer: "16" },
+        { label: "B4", type: "bonus", points: 2, prompt: "Come sono le coste del Regno Unito?", answer: "Frastagliate" },
+        { label: "C4", type: "trap", points: -1, prompt: "Come sono le estati nel Regno Unito?", answer: "Fresche" },
+        { label: "D4", type: "ship", points: 3, prompt: "Come si chiama il grande bassopiano della Germania del nord?", answer: "Bassopiano Germanico" },
+        { label: "E4", type: "ship", points: 3, prompt: "Qual è il secondo fiume più lungo d’Europa che nasce in Germania?", answer: "Danubio" },
+      ],
+      [
+        { label: "A5", type: "trap", points: -1, prompt: "Quale mare fornisce petrolio e gas al Regno Unito?", answer: "Mare del Nord" },
+        { label: "B5", type: "ship", points: 3, prompt: "Come si chiama il quartiere finanziario di Londra?", answer: "City" },
+        { label: "C5", type: "ship", points: 3, prompt: "Quale città tedesca ospita la Banca Centrale Europea?", answer: "Francoforte" },
+        { label: "D5", type: "bonus", points: 2, prompt: "Qual è il principale porto della Germania tra le grandi città?", answer: "Amburgo" },
+        { label: "E5", type: "bonus", points: 2, prompt: "Quale tipo di Stato è il Regno Unito?", answer: "Monarchia parlamentare" },
+      ],
+    ];
+
+    let grid = structuredClone(baseGrid).map(row => row.map(cell => ({ ...cell, state: "hidden" })));
+    let teams = ["Squadra 1", "Squadra 2"];
+    let scores = { "Squadra 1": 0, "Squadra 2": 0 };
+    let activeIndex = 0;
+    let selected = null;
+    let showAnswer = false;
+
+    const teamsEl = document.getElementById("teams");
+    const boardEl = document.getElementById("board");
+    const progressFill = document.getElementById("progressFill");
+    const progressText = document.getElementById("progressText");
+    const winnerEl = document.getElementById("winner");
+    const currentTurnEl = document.getElementById("currentTurn");
+
+    const modalBackdrop = document.getElementById("modalBackdrop");
+    const modalTitle = document.getElementById("modalTitle");
+    const questionBox = document.getElementById("questionBox");
+    const typeBadge = document.getElementById("typeBadge");
+    const toggleAnswerBtn = document.getElementById("toggleAnswerBtn");
+    const correctBtn = document.getElementById("correctBtn");
+    const wrongBtn = document.getElementById("wrongBtn");
+    const closeBtn = document.getElementById("closeBtn");
+
+    document.getElementById("nextTurnBtn").addEventListener("click", nextTeam);
+    document.getElementById("addTeamBtn").addEventListener("click", addTeam);
+    document.getElementById("resetBtn").addEventListener("click", resetGame);
+    toggleAnswerBtn.addEventListener("click", toggleAnswer);
+    correctBtn.addEventListener("click", () => markCell("hit"));
+    wrongBtn.addEventListener("click", () => markCell("miss"));
+    closeBtn.addEventListener("click", closeModal);
+    modalBackdrop.addEventListener("click", (e) => {
+      if (e.target === modalBackdrop) closeModal();
+    });
+
+    function renderTeams() {
+      teamsEl.innerHTML = "";
+      teams.forEach((team, index) => {
+        const row = document.createElement("div");
+        row.className = `team team-${index} ${index === activeIndex ? "active" : ""}`;
+
+        const input = document.createElement("input");
+        input.value = team;
+        input.addEventListener("change", (e) => updateTeamName(index, e.target.value.trim()));
+        input.addEventListener("blur", (e) => updateTeamName(index, e.target.value.trim()));
+
+        const score = document.createElement("div");
+        score.className = "score";
+        score.textContent = scores[team] ?? 0;
+
+        row.appendChild(input);
+        row.appendChild(score);
+        teamsEl.appendChild(row);
+      });
+      currentTurnEl.textContent = `Turno: ${teams[activeIndex]}`;
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = "";
+
+      const empty = document.createElement("div");
+      boardEl.appendChild(empty);
+
+      letters.forEach(letter => {
+        const head = document.createElement("div");
+        head.className = "head";
+        head.textContent = letter;
+        boardEl.appendChild(head);
+      });
+
+      grid.forEach((row, r) => {
+        const rowHead = document.createElement("div");
+        rowHead.className = "head";
+        rowHead.textContent = r + 1;
+        boardEl.appendChild(rowHead);
+
+        row.forEach((cell, c) => {
+          const btn = document.createElement("button");
+          btn.className = `cell ${cell.state}`;
+          btn.textContent = cell.label;
+          btn.disabled = cell.state === "hit";
+          btn.addEventListener("click", () => openCell(r, c));
+          boardEl.appendChild(btn);
+        });
+      });
+    }
+
+    function renderProgress() {
+      const completed = grid.flat().filter(c => c.state === "hit").length;
+      const percent = (completed / 25) * 100;
+      progressFill.style.width = `${percent}%`;
+      progressText.textContent = `${completed} caselle concluse su 25`;
+
+      if (completed === 25) {
+        const best = Math.max(...teams.map(t => scores[t] || 0));
+        const winners = teams.filter(t => (scores[t] || 0) === best);
+        winnerEl.textContent = winners.length > 1 ? `Partita finita: pareggio (${winners.join(", ")})` : `Partita finita: vince ${winners[0]}`;
+      } else {
+        winnerEl.textContent = "";
+      }
+    }
+
+    function renderAll() {
+      renderTeams();
+      renderBoard();
+      renderProgress();
+    }
+
+    function getTypeLabel(type) {
+      if (type === "bonus") return "Bonus";
+      if (type === "ship") return "Nave";
+      if (type === "trap") return "Trappola";
+      return "Domanda";
+    }
+
+    function openCell(r, c) {
+      const cell = grid[r][c];
+      if (cell.state === "hit") return;
+      selected = { row: r, col: c, ...cell };
+      showAnswer = false;
+      modalTitle.textContent = `${selected.label} - ${teams[activeIndex]}`;
+      typeBadge.textContent = getTypeLabel(selected.type);
+      typeBadge.className = `type-badge ${selected.type || "question"}`;
+      questionBox.textContent = selected.prompt;
+      toggleAnswerBtn.textContent = "Mostra risposta";
+      modalBackdrop.classList.add("open");
+    }
+
+    function toggleAnswer() {
+      if (!selected) return;
+      showAnswer = !showAnswer;
+      questionBox.textContent = showAnswer ? selected.answer : selected.prompt;
+      toggleAnswerBtn.textContent = showAnswer ? "Torna alla domanda" : "Mostra risposta";
+    }
+
+    function closeModal() {
+      selected = null;
+      showAnswer = false;
+      modalBackdrop.classList.remove("open");
+    }
+
+    function markCell(result) {
+      if (!selected) return;
+
+      grid[selected.row][selected.col].state = result;
+
+      const activeTeam = teams[activeIndex];
+      if (result === "hit") {
+        scores[activeTeam] = (scores[activeTeam] || 0) + selected.points;
+      } else if (result === "miss" && selected.type === "trap") {
+        scores[activeTeam] = Math.max(0, (scores[activeTeam] || 0) - 1);
+      }
+
+      closeModal();
+      renderAll();
+    }
+
+    function nextTeam() {
+      activeIndex = (activeIndex + 1) % teams.length;
+      renderTeams();
+    }
+
+    function addTeam() {
+      if (teams.length >= 6) return;
+      const newName = `Squadra ${teams.length + 1}`;
+      teams.push(newName);
+      scores[newName] = 0;
+      renderTeams();
+    }
+
+    function updateTeamName(index, rawValue) {
+      const oldName = teams[index];
+      const fallback = oldName;
+      let value = rawValue || fallback;
+
+      if (teams.some((team, i) => i !== index && team === value)) {
+        value = `${value} (${index + 1})`;
+      }
+
+      if (value === oldName) {
+        renderTeams();
+        return;
+      }
+
+      teams[index] = value;
+      scores[value] = scores[oldName] || 0;
+      delete scores[oldName];
+      renderTeams();
+    }
+
+    function resetGame() {
+      grid = structuredClone(baseGrid).map(row => row.map(cell => ({ ...cell, state: "hidden" })));
+      scores = Object.fromEntries(teams.map(team => [team, 0]));
+      activeIndex = 0;
+      closeModal();
+      renderAll();
+    }
+
+    renderAll();
+  </script>
+</body>
+</html>
